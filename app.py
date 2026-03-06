@@ -210,7 +210,7 @@ if st.session_state.step == 1:
                     genai.configure(api_key=user_api_key.strip())
                     
                     # 최신 멀티모달 모델 통합 사용 (텍스트, 이미지 모두 1.5-flash로 일원화)
-                    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+                    model = genai.GenerativeModel('gemini-1.5-flash')
                     
                     char_desc = ""
                     if char_image_file:

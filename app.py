@@ -13,9 +13,8 @@ from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips, Tex
 # ---------------------------------------------------------
 # 🔑 API 키 고정 설정
 # ---------------------------------------------------------
-GEMINI_API_KEY = "AIzaSyClTMO8YUNLPKFPpJP9XHzeO0mxaaW2WOw"
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+# 🔑 API 설정: 코드에 적지 않고 웹페이지 화면(UI)에서 받기!
+# ---------------------------------------------------------
 
 # 기본 설정 (모바일 최적화)
 st.set_page_config(page_title="승석Bot 🤖 - 전문 지식 스토리보드", page_icon="🤖", layout="centered")
@@ -44,6 +43,13 @@ with st.sidebar:
         """, 
         unsafe_allow_html=True
     )
+    
+    st.header("🔑 구글 API 설정")
+    st.markdown("API 키 보호를 위해 화면에서 직접 입력받습니다. (저장되지 않습니다)")
+    user_api_key = st.text_input("Gemini API Key 입력:", type="password", placeholder="AIzaSy...")
+    
+    st.divider()
+    
     st.header("⚙️ 공간 관리")
     st.markdown("진행 중인 모든 스토리보드와 임시 파일을 초기화합니다.")
         
@@ -193,13 +199,18 @@ if st.session_state.step == 1:
             st.image(char_image_file, width=200, caption="설정된 주인공 캐릭터")
     
     if st.button("🔍 타임라인 분석 시작", type="primary", use_container_width=True):
-        if not script_text.strip():
+        if not user_api_key.strip():
+            st.error("⚠️ 좌측 사이드바에 구글 Gemini API 키를 먼저 입력해주세요!")
+        elif not script_text.strip():
             st.error("대본을 입력해주세요.")
         else:
             with st.spinner("🧠 파싱 중... (대본을 의미 단위 씬으로 나누는 중)"):
                 try:
+                    # 입력받은 API 키로 실시간 설정 구성
+                    genai.configure(api_key=user_api_key.strip())
+                    
                     # 최신 멀티모달 모델 통합 사용 (텍스트, 이미지 모두 1.5-flash로 일원화)
-                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    model = genai.GenerativeModel('gemini-1.5-flash-latest')
                     
                     char_desc = ""
                     if char_image_file:

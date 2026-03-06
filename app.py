@@ -212,7 +212,7 @@ elif st.session_state.step == 2:
             st.markdown("<br><br>", unsafe_allow_html=True)
             if st.button("🎨 이미지 자동 생성", key=f"btn_gen_{idx}"):
                 with st.spinner(f"Scene {scene['scene_id']} 이미지 렌더링 중..."):
-                    safe_prompt = urllib.parse.quote(scene['prompt"])
+                    safe_prompt = urllib.parse.quote(scene['prompt'])
                     # Pollinations AI를 활용한 안정적 무료 생성
                     url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1920&nologo=true"
                     r = requests.get(url)

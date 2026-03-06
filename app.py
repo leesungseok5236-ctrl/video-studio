@@ -7,6 +7,7 @@ import urllib.parse
 import streamlit as st
 import edge_tts
 import google.generativeai as genai
+from PIL import Image
 from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips, TextClip, CompositeVideoClip
 
 # ---------------------------------------------------------
@@ -67,6 +68,10 @@ if st.session_state.step == 1:
     st.subheader("📝 1단계: 대본 입력 및 타임라인 분석")
     script_text = st.text_area("영상에 들어갈 대본을 작성해주세요.", height=200, 
                                placeholder="현대 사회에서 인공지능이 왜 중요한지 알아보겠습니다...", max_chars=10000)
+                               
+    char_image_file = st.file_uploader("주인공 캐릭터 참조 이미지 업로드 (선택사항)", type=['png', 'jpg', 'jpeg'])
+    if char_image_file:
+        st.image(char_image_file, width=150, caption="이 캐릭터를 주인공으로 사용합니다.")
     
     if st.button("🔍 타임라인 분석 시작", type="primary", use_container_width=True):
         if not script_text.strip():
@@ -75,12 +80,26 @@ if st.session_state.step == 1:
             with st.spinner("🧠 파싱 중... (대본을 의미 단위 씬으로 나누는 중)"):
                 try:
                     model = genai.GenerativeModel('gemini-1.5-flash')
+                    
+                    char_desc = ""
+                    if char_image_file:
+                        with st.spinner("✨ 캐릭터 특징 분석 중..."):
+                            img = Image.open(char_image_file)
+                            char_prompt = "Describe the physical appearance of this character (hair color, clothing, face, age, prominent features) in a very short and clear English sentence. Start with 'A character with...'"
+                            char_res = model.generate_content([char_prompt, img])
+                            char_desc = char_res.text.strip()
+                            st.session_state.character_description = char_desc
+                            st.session_state.character_image = char_image_file.getvalue()
+                    else:
+                        st.session_state.character_description = ""
+                        st.session_state.character_image = None
+                        
                     prompt_req = f"""
                     다음 영상 대본을 4~8개의 의미 있는 씬(장면)으로 분할해줘.
                     응답은 반드시 아래와 같은 JSON 배열 (Array of Objects) 구문으로만 반환해. 다른 설명이나 마크다운 백틱(```)은 절대 붙이지 마.
 
                     [
-                      {{"scene_id": 1, "text": "첫 번째 씬의 대본 문장입니다.", "prompt": "English prompt describing the first scene, highly detailed, professional, cinematic lighting, 4k"}},
+                      {{"scene_id": 1, "text": "첫 번째 씬의 대본 문장입니다.", "prompt": "English prompt describing the first scene, highly detailed"}},
                       {{"scene_id": 2, "text": "두 번째 씬의 대본 문장입니다.", "prompt": "English prompt describing the second scene, ..."}}
                     ]
 
@@ -93,8 +112,14 @@ if st.session_state.step == 1:
                     raw_text = response.text.replace("```json", "").replace("```", "").strip()
                     parsed_data = json.loads(raw_text)
                     
-                    # 이미지 경로 초기화
+                    # 기본 프롬프트 강화 및 이미지 경로 초기화
+                    style_appendix = ", clean 2D animation style, educational infographic"
                     for item in parsed_data:
+                        base_p = item["prompt"]
+                        if char_desc:
+                            item["prompt"] = f"{char_desc}. They are in the following scene: {base_p}{style_appendix}"
+                        else:
+                            item["prompt"] = f"{base_p}{style_appendix}"
                         item["image_path"] = None
                         
                     st.session_state.timeline_data = parsed_data
@@ -109,6 +134,17 @@ if st.session_state.step == 1:
 # ==========================================
 elif st.session_state.step == 2:
     st.subheader("🎞️ 2단계: 이미지 매칭 및 스토리보드")
+    
+    if st.session_state.get("character_image") and st.session_state.get("character_description"):
+        st.info("💡 설정된 주인공 캐릭터가 모든 씬 생성에 반영됩니다.")
+        with st.container(border=True):
+            char_cols = st.columns([1, 2])
+            with char_cols[0]:
+                st.image(st.session_state.character_image, use_column_width=True)
+            with char_cols[1]:
+                st.markdown("**설정된 주인공 (AI 분석 특징):**")
+                st.caption(f"{st.session_state.character_description}")
+            
     st.markdown("각 씬(Scene)별로 텍스트 분할이 완료되었습니다. **'이미지 자동 생성'** 버튼을 차례로 눌러 씬마다 알맞은 이미지를 렌더링하세요.")
     
     all_images_ready = True

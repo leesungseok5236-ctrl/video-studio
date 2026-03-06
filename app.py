@@ -65,7 +65,41 @@ if "timeline_data" not in st.session_state:
 # 1단계: 타임라인 생성 (Script to Timeline)
 # ==========================================
 if st.session_state.step == 1:
-    st.subheader("📝 1단계: 대본 입력 및 타임라인 분석")
+    st.subheader("🎨 1단계: 영상 스타일 선택")
+    st.markdown("영상 전체의 분위기와 퀄리티를 결정할 아트 스타일을 선택해 주세요.")
+    
+    style_options = {
+        "디즈니 3D 스타일": {
+            "desc": "귀여운 캐릭터, 풍부한 색감 🏰", 
+            "prompt": "Disney/Pixar 3D animation style, cute character, vibrant colors"
+        },
+        "실사풍 애니메이션": {
+            "desc": "고유의 3D 질감, 영화 같은 조명 🎬", 
+            "prompt": "High-end 3D render, realistic textures, cinematic lighting"
+        },
+        "일본 애니메이션": {
+            "desc": "지브리풍 감성, 부드러운 수채화 배경 🌸", 
+            "prompt": "Studio Ghibli style, hand-drawn feel, soft watercolor"
+        },
+        "2D 인포그래픽": {
+            "desc": "전문적인 벡터 일러스트, 깔끔한 플랫 디자인 📊", 
+            "prompt": "Modern vector illustration, flat design, professional clean look"
+        }
+    }
+    
+    # 모바일에서도 한눈에 보이는 라디오 버튼 (간단한 설명 포함)
+    selected_style_name = st.radio(
+        "적용할 스타일:",
+        options=list(style_options.keys()),
+        format_func=lambda x: f"{x} ({style_options[x]['desc']})"
+    )
+    
+    selected_style_prompt = style_options[selected_style_name]["prompt"]
+    st.session_state.video_style = selected_style_name
+    
+    st.divider()
+    
+    st.subheader("📝 2단계: 대본 입력 및 주인공 설정")
     script_text = st.text_area("영상에 들어갈 대본을 작성해주세요.", height=200, 
                                placeholder="현대 사회에서 인공지능이 왜 중요한지 알아보겠습니다...", max_chars=10000)
                                
@@ -79,14 +113,17 @@ if st.session_state.step == 1:
         else:
             with st.spinner("🧠 파싱 중... (대본을 의미 단위 씬으로 나누는 중)"):
                 try:
-                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    # 404 에러 방지를 위해 호환성 높은 모델 버전을 분리 사용
+                    text_model = genai.GenerativeModel('gemini-pro')
                     
                     char_desc = ""
                     if char_image_file:
                         with st.spinner("✨ 캐릭터 특징 분석 중..."):
                             img = Image.open(char_image_file)
                             char_prompt = "Describe the physical appearance of this character (hair color, clothing, face, age, prominent features) in a very short and clear English sentence. Start with 'A character with...'"
-                            char_res = model.generate_content([char_prompt, img])
+                            # 이미지는 vision 모델로 처리
+                            vision_model = genai.GenerativeModel('gemini-pro-vision')
+                            char_res = vision_model.generate_content([char_prompt, img])
                             char_desc = char_res.text.strip()
                             st.session_state.character_description = char_desc
                             st.session_state.character_image = char_image_file.getvalue()
@@ -106,20 +143,23 @@ if st.session_state.step == 1:
                     대본:
                     {script_text}
                     """
-                    response = model.generate_content(prompt_req)
+                    response = text_model.generate_content(prompt_req)
                     
-                    # JSON 파싱 준비 (가끔 백틱이나 추가 설명이 올 경우를 대비)
+                    # JSON 파싱 준비
                     raw_text = response.text.replace("```json", "").replace("```", "").strip()
                     parsed_data = json.loads(raw_text)
                     
-                    # 기본 프롬프트 강화 및 이미지 경로 초기화
-                    style_appendix = ", clean 2D animation style, educational infographic"
+                    # 기본 프롬프트 강화 및 이미지 경로 초기화 (스타일 + 캐릭터 고정 + 씬 상황)
                     for item in parsed_data:
                         base_p = item["prompt"]
+                        # [스타일 지시] + [캐릭터 고정 묘사] + [해당 씬 배경 및 상황] 순서로 자연스럽게 결합 (문자 충돌 방지)
+                        merged_prompt = f"{selected_style_prompt}. "
                         if char_desc:
-                            item["prompt"] = f"{char_desc}. They are in the following scene: {base_p}{style_appendix}"
+                            merged_prompt += f"{char_desc}. In this scene: {base_p}. no text, 4k resolution"
                         else:
-                            item["prompt"] = f"{base_p}{style_appendix}"
+                            merged_prompt += f"Scene description: {base_p}. no text, 4k resolution"
+                            
+                        item["prompt"] = merged_prompt
                         item["image_path"] = None
                         
                     st.session_state.timeline_data = parsed_data
@@ -133,16 +173,18 @@ if st.session_state.step == 1:
 # 2단계: 이미지 매칭 및 스토리보드 (Storyboard View)
 # ==========================================
 elif st.session_state.step == 2:
-    st.subheader("🎞️ 2단계: 이미지 매칭 및 스토리보드")
+    st.subheader("🎞️ 스토리보드 이미지 매칭")
     
-    if st.session_state.get("character_image") and st.session_state.get("character_description"):
-        st.info("💡 설정된 주인공 캐릭터가 모든 씬 생성에 반영됩니다.")
-        with st.container(border=True):
+    # 상단 락(Lock) 정보 - 스타일 및 캐릭터 노출
+    st.info("💡 설정된 주인공 캐릭터와 스타일이 모든 씬에 일관되게 반영됩니다.")
+    with st.container(border=True):
+        st.markdown(f"**🎨 적용된 영상 스타일:** `{st.session_state.get('video_style', '기본값')}`")
+        if st.session_state.get("character_image") and st.session_state.get("character_description"):
             char_cols = st.columns([1, 2])
             with char_cols[0]:
                 st.image(st.session_state.character_image, use_column_width=True)
             with char_cols[1]:
-                st.markdown("**설정된 주인공 (AI 분석 특징):**")
+                st.markdown("**설정된 주인공 (AI 추출 외형):**")
                 st.caption(f"{st.session_state.character_description}")
             
     st.markdown("각 씬(Scene)별로 텍스트 분할이 완료되었습니다. **'이미지 자동 생성'** 버튼을 차례로 눌러 씬마다 알맞은 이미지를 렌더링하세요.")
@@ -170,7 +212,7 @@ elif st.session_state.step == 2:
             st.markdown("<br><br>", unsafe_allow_html=True)
             if st.button("🎨 이미지 자동 생성", key=f"btn_gen_{idx}"):
                 with st.spinner(f"Scene {scene['scene_id']} 이미지 렌더링 중..."):
-                    safe_prompt = urllib.parse.quote(scene['prompt'])
+                    safe_prompt = urllib.parse.quote(scene['prompt"])
                     # Pollinations AI를 활용한 안정적 무료 생성
                     url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1920&nologo=true"
                     r = requests.get(url)

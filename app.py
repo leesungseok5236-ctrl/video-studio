@@ -69,25 +69,85 @@ if st.session_state.step == 1:
     st.markdown("영상 전체의 분위기와 퀄리티를 결정할 아트 스타일을 선택해 주세요.")
     
     style_options = {
-        "디즈니 3D 스타일": {
+        "디즈니 3D": {
             "desc": "귀여운 캐릭터, 풍부한 색감 🏰", 
             "prompt": "Disney/Pixar 3D animation style, cute character, vibrant colors",
             "img": "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=300&fit=crop"
         },
-        "실사풍 애니메이션": {
+        "실사풍 3D": {
             "desc": "고유의 3D 질감, 영화 같은 조명 🎬", 
-            "prompt": "High-end 3D render, realistic textures, cinematic lighting",
+            "prompt": "High-end realistic 3D, cinematic lighting",
             "img": "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=300&fit=crop"
         },
-        "일본 애니메이션": {
+        "일본 지브리풍": {
             "desc": "지브리풍 감성, 부드러운 수채화 배경 🌸", 
-            "prompt": "Studio Ghibli style, hand-drawn feel, soft watercolor",
+            "prompt": "Studio Ghibli style, soft watercolor",
             "img": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&h=300&fit=crop"
         },
         "2D 인포그래픽": {
             "desc": "전문적인 벡터 일러스트, 깔끔한 플랫 디자인 📊", 
-            "prompt": "Modern vector illustration, flat design, professional clean look",
+            "prompt": "Clean modern vector infographic",
             "img": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop"
+        },
+        "사이버펑크": {
+            "desc": "사이버펑크 미학, 네온 조명 🌆", 
+            "prompt": "Cyberpunk aesthetic, neon lights",
+            "img": "https://images.unsplash.com/photo-1555680202-c86f0e12f086?w=400&h=300&fit=crop"
+        },
+        "클레이 애니메이션": {
+            "desc": "스톱 모션 클레이메이션 찰흙 느낌 🍡", 
+            "prompt": "Stop-motion claymation style",
+            "img": "https://images.unsplash.com/photo-1618331835717-801e976710b2?w=400&h=300&fit=crop"
+        },
+        "수채화 일러스트": {
+            "desc": "아름다운 수채화 페인팅 🖌️", 
+            "prompt": "Beautiful watercolor painting",
+            "img": "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400&h=300&fit=crop"
+        },
+        "레트로 코믹북": {
+            "desc": "빈티지 코믹북 스타일, 하프톤 💥", 
+            "prompt": "Vintage comic book style, halftone",
+            "img": "https://images.unsplash.com/photo-1626284880579-99450c268fc3?w=400&h=300&fit=crop"
+        },
+        "팝아트": {
+            "desc": "강렬하고 생기 넘치는 팝아트 🎨", 
+            "prompt": "Vibrant Pop Art style",
+            "img": "https://images.unsplash.com/photo-1562621124-74ea05eb3e85?w=400&h=300&fit=crop"
+        },
+        "미니멀리즘": {
+            "desc": "미니멀리스트 플랫 디자인, 솔리드 컬러 🧊", 
+            "prompt": "Minimalist flat design, solid colors",
+            "img": "https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?w=400&h=300&fit=crop"
+        },
+        "3D 로우폴리": {
+            "desc": "3D 로우 폴리 아이소메트릭 아트 💎", 
+            "prompt": "3D low poly isometric art",
+            "img": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=300&fit=crop"
+        },
+        "픽셀 아트": {
+            "desc": "디테일한 16비트 픽셀 아트 👾", 
+            "prompt": "Detailed 16-bit pixel art",
+            "img": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&h=300&fit=crop"
+        },
+        "연필 스케치": {
+            "desc": "거칠고 디테일한 연필 스케치 ✏️", 
+            "prompt": "Detailed rough pencil sketch",
+            "img": "https://images.unsplash.com/photo-1580136579302-fa850edce64d?w=400&h=300&fit=crop"
+        },
+        "오일 페인팅": {
+            "desc": "클래식 오일 페인팅 스타일 🖼️", 
+            "prompt": "Classic oil painting style",
+            "img": "https://images.unsplash.com/photo-1579783900864-51321d6cefe3?w=400&h=300&fit=crop"
+        },
+        "흑백 누아르": {
+            "desc": "흑백 누아르 시네마틱 🎞️", 
+            "prompt": "Black and white noir cinematic",
+            "img": "https://images.unsplash.com/photo-1510314480749-d757d59048a1?w=400&h=300&fit=crop"
+        },
+        "디즈니 2D 클래식": {
+            "desc": "클래식 2D 디즈니 애니, 셀 셰이딩 🕰️", 
+            "prompt": "Classic 2D Disney animation style, vintage cel shading, flat vibrant colors",
+            "img": "https://images.unsplash.com/photo-1582046808757-0a379f64db73?w=400&h=300&fit=crop"
         }
     }
     
@@ -95,38 +155,23 @@ if st.session_state.step == 1:
     if "video_style" not in st.session_state:
         st.session_state.video_style = "2D 인포그래픽"
         
-    st.success(f"현재 🟢 **{st.session_state.video_style}**이(가) 적용되었습니다.")
+    st.info(f"🎨 현재 적용된 스타일: **{st.session_state.video_style}**")
     
-    # 그리드 스타일 적용 (2x2)
+    # 4열(Columns) 그리드 레이아웃 적용
     keys = list(style_options.keys())
-    col1, col2 = st.columns(2)
     
-    with col1:
-        st.image(style_options[keys[0]]["img"], use_column_width=True)
-        if st.button(f"✨ {keys[0]} 선택", key="btn_style_0", use_container_width=True):
-            st.session_state.video_style = keys[0]
-            st.rerun()
-            
-        st.markdown("<br>", unsafe_allow_html=True)
-            
-        st.image(style_options[keys[2]]["img"], use_column_width=True)
-        if st.button(f"✨ {keys[2]} 선택", key="btn_style_2", use_container_width=True):
-            st.session_state.video_style = keys[2]
-            st.rerun()
-
-    with col2:
-        st.image(style_options[keys[1]]["img"], use_column_width=True)
-        if st.button(f"✨ {keys[1]} 선택", key="btn_style_1", use_container_width=True):
-            st.session_state.video_style = keys[1]
-            st.rerun()
-            
-        st.markdown("<br>", unsafe_allow_html=True)
-            
-        st.image(style_options[keys[3]]["img"], use_column_width=True)
-        if st.button(f"✨ {keys[3]} 선택", key="btn_style_3", use_container_width=True):
-            st.session_state.video_style = keys[3]
-            st.rerun()
-            
+    # 4개씩 짝지어서 row 구성
+    for i in range(0, len(keys), 4):
+        cols = st.columns(4)
+        for j in range(4):
+            if i + j < len(keys):
+                style_name = keys[i+j]
+                with cols[j]:
+                    st.image(style_options[style_name]["img"], use_column_width=True)
+                    if st.button(f"✨ {style_name}", key=f"btn_style_{i+j}", use_container_width=True):
+                        st.session_state.video_style = style_name
+                        st.rerun()
+                        
     selected_style_prompt = style_options[st.session_state.video_style]["prompt"]
     
     st.divider()

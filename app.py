@@ -209,16 +209,33 @@ if st.session_state.step == 1:
                     # 입력받은 API 키로 실시간 설정 구성
                     genai.configure(api_key=user_api_key.strip())
                     
-                    # 최신 멀티모달 모델 통합 사용 (텍스트, 이미지 모두 1.5-flash로 일원화)
-                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    
+                    # 무적 폴백(Fallback): 최신 1.5버전부터 구버전까지 에러 없이 될 때까지 순차 시도
+                    def safe_generate(prompt_data, is_vision=False):
+                        models_to_try = [
+                            'gemini-1.5-flash', 
+                            'gemini-1.5-pro',
+                            'gemini-1.5-flash-latest',
+                            'gemini-1.0-pro-vision-latest' if is_vision else 'gemini-pro'
+                        ]
+                        last_error = None
+                        for model_name in models_to_try:
+                            try:
+                                model = genai.GenerativeModel(model_name)
+                                return model.generate_content(prompt_data)
+                            except Exception as e:
+                                last_error = e
+                                if "404" in str(e) or "not found" in str(e).lower():
+                                    continue # 다음 모델로 재시도
+                                raise e # 404가 아닌 다른 에러(권한 등)면 그대로 중단
+                        raise last_error # 모든 모델이 실패하면 마지막 에러 출력
                     
                     char_desc = ""
                     if char_image_file:
-                        with st.spinner("✨ 캐릭터 특징 분석 중..."):
+                        with st.spinner("✨ 캐릭터 특징 분석 중... (최적의 AI 서치 중)"):
                             img = Image.open(char_image_file)
                             char_prompt = "Describe the physical appearance of this character (hair color, clothing, face, age, prominent features) in a very short and clear English sentence. Start with 'A character with...'"
-                            # 리스트 형태로 텍스트와 이미지를 한 번에 전달하는 최신 문법
-                            char_res = model.generate_content([char_prompt, img])
+                            char_res = safe_generate([char_prompt, img], is_vision=True)
                             char_desc = char_res.text.strip()
                             st.session_state.character_description = char_desc
                             st.session_state.character_image = char_image_file.getvalue()
@@ -238,7 +255,7 @@ if st.session_state.step == 1:
                     대본:
                     {script_text}
                     """
-                    response = model.generate_content(prompt_req)
+                    response = safe_generate(prompt_req, is_vision=False)
                     
                     # JSON 파싱 준비
                     raw_text = response.text.replace("```json", "").replace("```", "").strip()

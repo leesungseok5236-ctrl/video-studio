@@ -71,31 +71,63 @@ if st.session_state.step == 1:
     style_options = {
         "디즈니 3D 스타일": {
             "desc": "귀여운 캐릭터, 풍부한 색감 🏰", 
-            "prompt": "Disney/Pixar 3D animation style, cute character, vibrant colors"
+            "prompt": "Disney/Pixar 3D animation style, cute character, vibrant colors",
+            "img": "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=300&fit=crop"
         },
         "실사풍 애니메이션": {
             "desc": "고유의 3D 질감, 영화 같은 조명 🎬", 
-            "prompt": "High-end 3D render, realistic textures, cinematic lighting"
+            "prompt": "High-end 3D render, realistic textures, cinematic lighting",
+            "img": "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=300&fit=crop"
         },
         "일본 애니메이션": {
             "desc": "지브리풍 감성, 부드러운 수채화 배경 🌸", 
-            "prompt": "Studio Ghibli style, hand-drawn feel, soft watercolor"
+            "prompt": "Studio Ghibli style, hand-drawn feel, soft watercolor",
+            "img": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&h=300&fit=crop"
         },
         "2D 인포그래픽": {
             "desc": "전문적인 벡터 일러스트, 깔끔한 플랫 디자인 📊", 
-            "prompt": "Modern vector illustration, flat design, professional clean look"
+            "prompt": "Modern vector illustration, flat design, professional clean look",
+            "img": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop"
         }
     }
     
-    # 모바일에서도 한눈에 보이는 라디오 버튼 (간단한 설명 포함)
-    selected_style_name = st.radio(
-        "적용할 스타일:",
-        options=list(style_options.keys()),
-        format_func=lambda x: f"{x} ({style_options[x]['desc']})"
-    )
+    # 기본 스타일 지정
+    if "video_style" not in st.session_state:
+        st.session_state.video_style = "2D 인포그래픽"
+        
+    st.success(f"현재 🟢 **{st.session_state.video_style}**이(가) 적용되었습니다.")
     
-    selected_style_prompt = style_options[selected_style_name]["prompt"]
-    st.session_state.video_style = selected_style_name
+    # 그리드 스타일 적용 (2x2)
+    keys = list(style_options.keys())
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.image(style_options[keys[0]]["img"], use_column_width=True)
+        if st.button(f"✨ {keys[0]} 선택", key="btn_style_0", use_container_width=True):
+            st.session_state.video_style = keys[0]
+            st.rerun()
+            
+        st.markdown("<br>", unsafe_allow_html=True)
+            
+        st.image(style_options[keys[2]]["img"], use_column_width=True)
+        if st.button(f"✨ {keys[2]} 선택", key="btn_style_2", use_container_width=True):
+            st.session_state.video_style = keys[2]
+            st.rerun()
+
+    with col2:
+        st.image(style_options[keys[1]]["img"], use_column_width=True)
+        if st.button(f"✨ {keys[1]} 선택", key="btn_style_1", use_container_width=True):
+            st.session_state.video_style = keys[1]
+            st.rerun()
+            
+        st.markdown("<br>", unsafe_allow_html=True)
+            
+        st.image(style_options[keys[3]]["img"], use_column_width=True)
+        if st.button(f"✨ {keys[3]} 선택", key="btn_style_3", use_container_width=True):
+            st.session_state.video_style = keys[3]
+            st.rerun()
+            
+    selected_style_prompt = style_options[st.session_state.video_style]["prompt"]
     
     st.divider()
     

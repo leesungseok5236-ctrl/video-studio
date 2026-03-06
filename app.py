@@ -180,9 +180,17 @@ if st.session_state.step == 1:
     script_text = st.text_area("영상에 들어갈 대본을 작성해주세요.", height=200, 
                                placeholder="현대 사회에서 인공지능이 왜 중요한지 알아보겠습니다...", max_chars=10000)
                                
-    char_image_file = st.file_uploader("주인공 캐릭터 참조 이미지 업로드 (선택사항)", type=['png', 'jpg', 'jpeg'])
-    if char_image_file:
-        st.image(char_image_file, width=150, caption="이 캐릭터를 주인공으로 사용합니다.")
+    st.markdown("<br>", unsafe_allow_html=True)
+    with st.container(border=True):
+        st.markdown("#### 👤 주인공 캐릭터 고정 설정 (선택사항)")
+        st.markdown("특정 인물을 영상 내내 주인공으로 등장시키고 싶다면 아래에 참조 이미지를 올려주세요.")
+        char_image_file = st.file_uploader(
+            "👇 주인공 캐릭터 이미지를 이곳에 드래그 앤 드롭하거나 클릭해서 찾아보기", 
+            type=['png', 'jpg', 'jpeg']
+        )
+        if char_image_file:
+            st.success("✨ 주인공 이미지가 성공적으로 등록되었습니다. 모든 씬에 이 캐릭터 외형이 고정됩니다!")
+            st.image(char_image_file, width=200, caption="설정된 주인공 캐릭터")
     
     if st.button("🔍 타임라인 분석 시작", type="primary", use_container_width=True):
         if not script_text.strip():

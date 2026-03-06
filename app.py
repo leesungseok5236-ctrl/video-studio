@@ -198,17 +198,16 @@ if st.session_state.step == 1:
         else:
             with st.spinner("🧠 파싱 중... (대본을 의미 단위 씬으로 나누는 중)"):
                 try:
-                    # 404 에러 방지를 위해 호환성 높은 모델 버전을 분리 사용
-                    text_model = genai.GenerativeModel('gemini-pro')
+                    # 최신 멀티모달 모델 통합 사용 (텍스트, 이미지 모두 1.5-flash로 일원화)
+                    model = genai.GenerativeModel('gemini-1.5-flash')
                     
                     char_desc = ""
                     if char_image_file:
                         with st.spinner("✨ 캐릭터 특징 분석 중..."):
                             img = Image.open(char_image_file)
                             char_prompt = "Describe the physical appearance of this character (hair color, clothing, face, age, prominent features) in a very short and clear English sentence. Start with 'A character with...'"
-                            # 이미지는 vision 모델로 처리
-                            vision_model = genai.GenerativeModel('gemini-pro-vision')
-                            char_res = vision_model.generate_content([char_prompt, img])
+                            # 리스트 형태로 텍스트와 이미지를 한 번에 전달하는 최신 문법
+                            char_res = model.generate_content([char_prompt, img])
                             char_desc = char_res.text.strip()
                             st.session_state.character_description = char_desc
                             st.session_state.character_image = char_image_file.getvalue()
@@ -228,7 +227,7 @@ if st.session_state.step == 1:
                     대본:
                     {script_text}
                     """
-                    response = text_model.generate_content(prompt_req)
+                    response = model.generate_content(prompt_req)
                     
                     # JSON 파싱 준비
                     raw_text = response.text.replace("```json", "").replace("```", "").strip()
